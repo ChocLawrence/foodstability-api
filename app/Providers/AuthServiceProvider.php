@@ -29,7 +29,7 @@ class AuthServiceProvider extends ServiceProvider
 
 
         VerifyEmail::toMailUsing(function ($notifiable, $url) {
-            $web_url = env("WEB_URL", "https://foodstability-78jew.ondigitalocean.app");
+            $web_url = env("WEB_URL", "https://foodstability.com");
             $spaUrl =  $web_url."/verify-email?url=".$url;
 
             return (new MailMessage)
