@@ -51,7 +51,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin()
     {
-        if($this->role_id === 2)
+        if($this->role_id === 1)
         { 
             return true; 
         } 
@@ -85,13 +85,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function scopeAuthors($query)
     {
-        return $query->where('role_id', 1);
+        return $query->where('role_id', 2);
     }
 
 
     public function sendPasswordResetNotification($token)
     {
-        $web_url = env("WEB_URL", "http://localhost:8000");
+        $web_url = env("WEB_URL", "https://foodstability.com");
         $url = $web_url.'/password-reset?token=' . $token .'&state=change';
 
         $this->notify(new ResetPasswordNotification($url));
