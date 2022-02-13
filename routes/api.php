@@ -23,6 +23,7 @@ use App\Http\Controllers\EmailVerificationController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+Route::middleware(['cors'])->group(function () {
 
 
 Route::get('/', [UserController::class,'root'])->name('root');
@@ -118,5 +119,6 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
  
 });
 
+});
  
 
