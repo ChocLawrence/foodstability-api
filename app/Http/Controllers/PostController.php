@@ -355,8 +355,8 @@ class PostController extends Controller
             if($validator->fails()){
               return $this->errorResponse($validator->messages(), 422);
             }
-            
-            $post->view_count += $request->view_count;
+            $newPostCount = $post->view_count + $request->view_count;
+            $post->view_count = $newPostCount;
             $post->save();
         
             return $this->successResponse(null, null, 200);
