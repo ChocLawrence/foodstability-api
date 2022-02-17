@@ -359,7 +359,7 @@ class PostController extends Controller
             $post->view_count = $newPostCount;
             $post->save();
         
-            return $this->successResponse(null, null, 200);
+            return $this->successResponse(null, "", 200);
 
         }catch(\Exception $e){
             return $this->errorResponse($e->getMessage(), 404);

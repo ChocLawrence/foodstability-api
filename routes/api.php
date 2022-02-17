@@ -48,7 +48,7 @@ Route::middleware(['cors'])->group(function () {
   Route::get('posts',[PostController::class, 'getPosts']);
   Route::get('posts/{id}',[PostController::class, 'getPost']);
   Route::get('posts/slug/{id}',[PostController::class, 'getPostBySlug']);
-  Route::put('posts/view/{id}',[PostController::class, 'updatePostCount']);
+  Route::post('posts/view/{id}',[PostController::class, 'updatePostCount']);
 
   //categories without authentication
   Route::get('categories',[CategoryController::class, 'getCategories']);
