@@ -348,17 +348,18 @@ class PostController extends Controller
     {
         try{
 
-
             $post= Post::find($id)->first();
 
             $validator = $this->validatePostCountUpdate();
             if($validator->fails()){
               return $this->errorResponse($validator->messages(), 422);
             }
-            
+
             $newPostCount = (int)$post->view_count + (int)$request->view_count;
-            $post->view_count = $newPostCount;
-            $post->save();
+            //$post->view_count = $newPostCount;
+            //$post->save();
+
+            DB::update('update posts set view_count=? where id=?',[$newPostCount,$post->id]);
         
             return $this->successResponse(null, "", 200);
 
