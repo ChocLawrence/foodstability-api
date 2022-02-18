@@ -359,7 +359,7 @@ class PostController extends Controller
             //$post->view_count = $newPostCount;
             //$post->save();
 
-            DB::update('update posts set view_count=? where id=?',[$newPostCount,$post->id]);
+            $post->update(['view_count' => $newPostCount]);
         
             return $this->successResponse(null, "", 200);
 
