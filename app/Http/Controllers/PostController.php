@@ -358,7 +358,6 @@ class PostController extends Controller
             $newPostCount = (int)$post->view_count + (int)$request->view_count;
             //$post->view_count = $newPostCount;
             //$post->save();
-
             $post->update(['view_count' => $newPostCount]);
         
             return $this->successResponse(null, "", 200);
