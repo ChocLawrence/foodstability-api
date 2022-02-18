@@ -349,18 +349,11 @@ class PostController extends Controller
         try{
 
             $post= Post::find($id)->first();
-
-            $validator = $this->validatePostCountUpdate();
-            if($validator->fails()){
-              return $this->errorResponse($validator->messages(), 422);
-            }
-
-            $newPostCount = (int)$post->view_count + (int)$request->view_count;
             //$post->view_count = $newPostCount;
             //$post->save();
-            $post->update(['view_count' => $newPostCount]);
-            $post->view_count = $newPostCount;
-            $post->save();
+            \DB::table('posts')
+               ->where('id', $post->id)
+               ->increment('view_count', 1);
         
             return $this->successResponse(null, "", 200);
 
@@ -437,12 +430,6 @@ class PostController extends Controller
             'practical' => 'required',
             'keywords' => 'required',
             'abstract' => 'required',
-        ]);
-    }
-
-    public function validatePostCountUpdate(){
-        return Validator::make(request()->all(), [
-            'view_count' => 'in:1',
         ]);
     }
 
