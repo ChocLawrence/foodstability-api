@@ -9,6 +9,8 @@ class Post extends Model
 {
     use HasFactory;
 
+    protected $table = 'posts';
+    protected $primary_key = 'id';
     protected $fillable = [
         'view_count',
         'slug',
@@ -25,6 +27,8 @@ class Post extends Model
         'pdf',
         'category_id',
         'user_id',
+        'created_at',
+        'updated_at',
     ];
     
     public function user()
