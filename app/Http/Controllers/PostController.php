@@ -344,16 +344,16 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function updatePostCount(Request $request, Post $id)
+    public function updatePostCount(Request $request, $id)
     {
         try{
 
             $post= Post::find($id)->first();
-            //$post->view_count = $newPostCount;
-            //$post->save();
-            \DB::table('posts')
-               ->where('id', $post->id)
-               ->increment('view_count', 1);
+            $post->view_count =  int($post->view_count) + 1;
+            $post->save();
+            // \DB::table('posts')
+            //    ->where('id', $post->id)
+            //    ->increment('view_count', 1);
         
             return $this->successResponse(null, "", 200);
 
