@@ -348,13 +348,10 @@ class PostController extends Controller
     {
         try{
 
-            $post= Post::find($id)->first();
-            // $post->view_count =  int($post->view_count) + 1;
-            // $post->save();
-            \DB::table('posts')
-               ->where('id', $post->id)
-               ->increment('view_count', 1);
-        
+            //$post= Post::find($id)->first();
+            Post::where('id',$id)
+            ->increment('view_count', 1);
+
             return $this->successResponse(null, "", 200);
 
         }catch(\Exception $e){
