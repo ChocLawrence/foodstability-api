@@ -20,7 +20,7 @@ class CreateUsersTable extends Migration
             $table->string('firstname');
             $table->string('lastname');
             $table->enum('gender',['male','female']);
-            $table->string('image')->default('default.png');
+            $table->mediumText('image')->nullable();
             $table->string('address')->nullable();
             $table->string('email')->unique();
             $table->string('phone')->unique()->nullable();

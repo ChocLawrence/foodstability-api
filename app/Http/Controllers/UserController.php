@@ -235,22 +235,13 @@ class UserController extends Controller
             $user = User::findOrFail(Auth::id());
             if (isset($image))
             {
-                $currentDate = Carbon::now()->toDateString();
-                $imageName = $slug.'-'.$currentDate.'-'.uniqid().'.'.$image->getClientOriginalExtension();
-                if (!Storage::disk('public')->exists('profile'))
-                {
-                Storage::disk('public')->makeDirectory('profile');
-                }
-    //            Delete old image form profile folder
-                if (Storage::disk('public')->exists('profile/'.$user->image))
-                {
-                    Storage::disk('public')->delete('profile/'.$user->image);
-                }
-                $profile = Image::make($image)->resize(500,500)->save();
-                Storage::disk('public')->put('profile/'.$imageName,$profile);
+                $path = $image->getRealPath();
+                $realImage = file_get_contents($path);
+                $imageName = base64_encode($realImage);
             } else {
                 $imageName = $user->image;
             }
+            
             $user->firstname = $request->firstname;
             $user->lastname = $request->lastname;
             $user->gender = $request->gender;

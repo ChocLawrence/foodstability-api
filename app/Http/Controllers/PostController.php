@@ -83,9 +83,10 @@ class PostController extends Controller
                 if($validator->fails()){
                   return $this->errorResponse($validator->messages(), 422);
                 }
-                $end_date = $request->end_date;
+                $end_date = Carbon::createFromFormat('Y-m-d',  $request->end_date)->endOfDay();
             }else{
-                $end_date = Carbon::now()->format('Y-m-d');
+                $end = Carbon::now()->format('Y-m-d');
+                $end_date = Carbon::createFromFormat('Y-m-d',  $end)->endOfDay();
             }
 
 
@@ -170,39 +171,24 @@ class PostController extends Controller
     
             if(isset($image))
             {
-             // make unique name for image
-                $currentDate = Carbon::now()->toDateString();
-                $imageName  = $slug.'-'.$currentDate.'-'.uniqid().'.'.$image->getClientOriginalExtension();
-    
-                if(!Storage::disk('public')->exists('post'))
-                {
-                    Storage::disk('public')->makeDirectory('post');
-                }
-    
-                $postImage = Image::make($image)->resize(1600,1066)->save();
-                Storage::disk('public')->put('post/'.$imageName,$postImage);
+                $path = $image->getRealPath();
+                $realImage = file_get_contents($path);
+                $imageName = base64_encode($realImage);
     
             } else {
                 $imageName = "default.png";
             }
-    
+
             //check pdf
             if(isset($pdf))
             {
-             // make unique name for pdf
-                $currentDate = Carbon::now()->toDateString();
-                $pdfName  = $slug.'-'.$currentDate.'-'.uniqid().'.'.$pdf->getClientOriginalExtension();
+                $pdfPath = $pdf->getRealPath();
+                $realPdf = file_get_contents($pdfPath);
+                $pdfName = base64_encode($realPdf);
     
-                if(!Storage::disk('public')->exists('post'))
-                {
-                    Storage::disk('public')->makeDirectory('post');
-                }
-    
-                // compress pdf
-                //$postPdf = Image::make($pdf)->resize(1600,1066)->save();
-                Storage::disk('public')->put('post/'.$pdfName,file_get_contents($pdf));
-    
-            } 
+            }else{
+                $pdfName = null;
+            }
     
             $post = new Post();
             $post->user_id = Auth::id();
@@ -263,40 +249,22 @@ class PostController extends Controller
             $pdf = $request->file('pdf');
             $slug = Str::slug($request->title);
     
+           
             if(isset($image))
             {
-             // make unique name for image
-                $currentDate = Carbon::now()->toDateString();
-                $imageName  = $slug.'-'.$currentDate.'-'.uniqid().'.'.$image->getClientOriginalExtension();
-    
-                if(!Storage::disk('public')->exists('post'))
-                {
-                    Storage::disk('public')->makeDirectory('post');
-                }
-    
-                $postImage = Image::make($image)->resize(1600,1066)->save();
-                Storage::disk('public')->put('post/'.$imageName,$postImage);
-    
+                $path = $image->getRealPath();
+                $realImage = file_get_contents($path);
+                $imageName = base64_encode($realImage);
             }else {
                 $imageName = $post->image;
             }
-    
+
             //check pdf
             if(isset($pdf))
             {
-             // make unique name for pdf
-                $currentDate = Carbon::now()->toDateString();
-                $pdfName  = $slug.'-'.$currentDate.'-'.uniqid().'.'.$pdf->getClientOriginalExtension();
-    
-                if(!Storage::disk('public')->exists('post'))
-                {
-                    Storage::disk('public')->makeDirectory('post');
-                }
-    
-                // compress pdf
-                //$postPdf = Image::make($pdf)->resize(1600,1066)->save();
-                Storage::disk('public')->put('post/'.$pdfName,file_get_contents($pdf));
-    
+                $pdfPath = $pdf->getRealPath();
+                $realPdf = file_get_contents($pdfPath);
+                $pdfName = base64_encode($realPdf);
             } else {
                 $pdfName = $post->pdf;
             }

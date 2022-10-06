@@ -28,8 +28,8 @@ class CreatePostsTable extends Migration
              $table->string('issue');
              $table->string('doi')->nullable();
              $table->integer('view_count')->default(0);
-             $table->string('image')->default('post_default.jpg');
-             $table->string('pdf');
+             $table->longText('image')->nullable();
+             $table->longText('pdf')->nullable();
              $table->foreignId('category_id')
              ->constrained('categories')
              ->onDelete('cascade');

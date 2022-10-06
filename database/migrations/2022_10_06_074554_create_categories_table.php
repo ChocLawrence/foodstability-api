@@ -19,7 +19,7 @@ class CreateCategoriesTable extends Migration
              $table->bigIncrements('id');
              $table->string('name');
              $table->string('slug')->unique();
-             $table->string('image')->default('default.png');
+             $table->mediumText('image')->nullable();
              $table->timestamps();
          });
      }

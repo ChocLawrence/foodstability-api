@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Auth;
 
 
 class CategoryController extends Controller
@@ -72,40 +73,22 @@ class CategoryController extends Controller
             $slug= Str::slug($request->name);
 
             if(isset($image)){
-                //make unique name for image
-                $currentDate= Carbon::now()->toDateString();
-                $imagename=$slug.'-'.$currentDate.'-'.uniqid().'.'.$image->getClientOriginalExtension();
-
-                //check if dir exists
-                if(!Storage::disk('public')->exists('category')){
-
-                    Storage::disk('public')->makeDirectory('category');
-                }
-
-                //resize image for category and upload
-                $category= Image::make($image)->resize(1600,479)->save();
-                Storage::disk('public')->put('category/'.$imagename,$category);
-                
-                //check if category slider dir exists
-                if(!Storage::disk('public')->exists('category/slider')){
-
-                    Storage::disk('public')->makeDirectory('category/slider');
-                }
-
-                //resize image for category slider and upload
-                $slider= Image::make($image)->resize(500,333)->save();
-                Storage::disk('public')->put('category/slider/'.$imagename,$slider);
-                
-
-
+                $path = $image->getRealPath();
+                $realImage = file_get_contents($path);
+                $imageName = base64_encode($realImage);
             }else{
-                $imagename="default.png";
+                $imageName = null;
+            }
+
+            if (Auth::check())
+            {
+                $id = Auth::id();
             }
 
             $category= new Category();
             $category->name= $request->name;
             $category->slug=$slug;
-            $category->image=$imagename;
+            $category->image=$imageName;
             $category->save();
 
             return $this->successResponse($category,"Saved successfully", 200);
@@ -128,57 +111,43 @@ class CategoryController extends Controller
 
         try{
 
+            if(count($request->all()) == 0){
+                return $this->errorResponse("Nothing to update.Pass fields", 404);  
+            }
+
             $request->headers->set('Content-Type', '');
 
-            $validator = $this->validateCategory();
+            $validator = $this->validateUpdateCategory();
             if($validator->fails()){
               return $this->errorResponse($validator->messages(), 422);
             }
 
-             // get form image
+            // get form image
             $image = $request->file('image');
-            $slug = Str::slug($request->name);
             $category = Category::find($id);
             if (isset($image))
             {
-    //            make unique name for image
-                $currentDate = Carbon::now()->toDateString();
-                $imagename = $slug.'-'.$currentDate.'-'.uniqid().'.'.$image->getClientOriginalExtension();
-    //            check category dir is exists
-                if (!Storage::disk('public')->exists('category'))
-                {
-                    Storage::disk('public')->makeDirectory('category');
-                }
-    //            delete old image
-                if (Storage::disk('public')->exists('category/'.$category->image))
-                {
-                    Storage::disk('public')->delete('category/'.$category->image);
-                }
-    //            resize image for category and upload
-                $categoryimage = Image::make($image)->resize(1600,479)->save();
-                Storage::disk('public')->put('category/'.$imagename,$categoryimage);
-
-                //            check category slider dir is exists
-                if (!Storage::disk('public')->exists('category/slider'))
-                {
-                    Storage::disk('public')->makeDirectory('category/slider');
-                }
-                //            delete old slider image
-                if (Storage::disk('public')->exists('category/slider/'.$category->image))
-                {
-                    Storage::disk('public')->delete('category/slider/'.$category->image);
-                }
-                //            resize image for category slider and upload
-                $slider = Image::make($image)->resize(500,333)->save();
-                Storage::disk('public')->put('category/slider/'.$imagename,$slider);
+                $path = $image->getRealPath();
+                $realImage = file_get_contents($path);
+                $imageName = base64_encode($realImage);
 
             } else {
-                $imagename = $category->image;
+                $imageName = $category->image;
             }
 
-            $category->name = $request->name;
-            $category->slug = $slug;
-            $category->image = $imagename;
+            if (Auth::check())
+            {
+                $id = Auth::id();
+            }
+
+
+            if($request->name){
+              $slug = Str::slug($request->name);
+              $category->name = $request->name;
+              $category->slug = $slug;
+            }
+
+            $category->image = $imageName;
             $category->save();
 
             return $this->successResponse($category);
@@ -198,16 +167,6 @@ class CategoryController extends Controller
     {
         try{
             $category = Category::find($id);
-            if (Storage::disk('public')->exists('category/'.$category->image))
-            {
-                Storage::disk('public')->delete('category/'.$category->image);
-            }
-
-            if (Storage::disk('public')->exists('category/slider/'.$category->image))
-            {
-                Storage::disk('public')->delete('category/slider/'.$category->image);
-            }
-
             $category->delete();
 
             return $this->successResponse(null,"Deleted successfully", 200);
@@ -221,6 +180,13 @@ class CategoryController extends Controller
         return Validator::make(request()->all(), [
            'name'=>'required|unique:categories',
            'image'=>'required|mimes:jpeg,bmp,png,jpg'
+        ]);
+    }
+
+    public function validateUpdateCategory(){
+        return Validator::make(request()->all(), [
+           'name'=>'nullable|unique:categories',
+           'image'=>'nullable|mimes:jpeg,bmp,png,jpg'
         ]);
     }
 }
