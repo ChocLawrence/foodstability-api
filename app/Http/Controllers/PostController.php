@@ -233,12 +233,12 @@ class PostController extends Controller
      * @param  \App\Post  $post
      * @return \Illuminate\Http\Response
      */
-    public function updatePost(Request $request, Post $id)
+    public function updatePost(Request $request, $id)
     {
         try{
 
 
-            $post= Post::find($id)->first();
+            $post= Post::findOrFail($id);
 
             $validator = $this->validatePostUpdate();
             if($validator->fails()){
