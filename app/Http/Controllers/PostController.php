@@ -63,7 +63,7 @@ class PostController extends Controller
             }
 
             if($request->page_size){
-                $page_size = $request->page_size;
+                $page_size = 50;
             }else{
                 $page_size = 50;
             }
