@@ -63,9 +63,9 @@ class PostController extends Controller
             }
 
             if($request->page_size){
-                $page_size = 50;
+                $page_size = $request->page_size;
             }else{
-                $page_size = 50;
+                $page_size = 9;
             }
 
             if($request->start_date){
