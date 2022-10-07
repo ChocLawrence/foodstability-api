@@ -13,12 +13,15 @@ class CreatePostTagTable extends Migration
      */
     public function up()
     {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('post_tag');
         Schema::create('post_tag', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->integer('post_id');
             $table->integer('tag_id');
             $table->timestamps();
         });
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -28,6 +31,8 @@ class CreatePostTagTable extends Migration
      */
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('post_tag');
+        Schema::enableForeignKeyConstraints();
     }
 }

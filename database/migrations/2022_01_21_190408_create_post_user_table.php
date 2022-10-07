@@ -13,6 +13,8 @@ class CreatePostUserTable extends Migration
      */
     public function up()
     {
+        Schema::disableForeignKeyConstraints();
+        Schema::dropIfExists('post_user');
         Schema::create('post_user', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->foreignId('user_id')
@@ -23,6 +25,7 @@ class CreatePostUserTable extends Migration
                   ->onDelete('cascade');
             $table->timestamps();
         });
+        Schema::enableForeignKeyConstraints();
     }
 
     /**
@@ -32,6 +35,8 @@ class CreatePostUserTable extends Migration
      */
     public function down()
     {
+        Schema::disableForeignKeyConstraints();
         Schema::dropIfExists('post_user');
+        Schema::enableForeignKeyConstraints();
     }
 }
