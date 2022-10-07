@@ -247,7 +247,12 @@ class PostController extends Controller
 
             $image = $request->file('image');
             $pdf = $request->file('pdf');
-            $slug = Str::slug($request->title);
+
+            if($request->title){
+                $slug = Str::slug($request->title);
+            }else{
+                $slug = $post->slug;
+            }
     
            
             if(isset($image))
