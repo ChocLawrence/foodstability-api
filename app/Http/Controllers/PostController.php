@@ -96,11 +96,11 @@ class PostController extends Controller
                 $start_date->addHours(00)
                 ->addMinutes(00);
 
-                $end_date = Carbon::parse($end_date);
-                $end_date->addHours(23)
+                $endDate = Carbon::parse($end_date);
+                $endDate->addHours(23)
                 ->addMinutes(59);
 
-                $posts = $post_query->orderBY($sortBy,$sortOrder)->whereBetween('created_at', array($start_date, $end_date))->paginate($page_size);
+                $posts = $post_query->orderBY($sortBy,$sortOrder)->whereBetween('created_at', array($start_date, $endDate))->paginate($page_size);
            
             }else{
                 $posts = $post_query->orderBY($sortBy,$sortOrder)->get();
