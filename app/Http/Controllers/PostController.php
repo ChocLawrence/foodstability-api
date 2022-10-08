@@ -345,19 +345,6 @@ class PostController extends Controller
         try{
 
             $post = Post::find($id)->first();
-
-            // delete image
-            if (Storage::disk('public')->exists('post/'.$post->image))
-            {
-                Storage::disk('public')->delete('post/'.$post->image);
-            }
-
-            //delete pdf
-            if (Storage::disk('public')->exists('post/'.$post->pdf))
-            {
-                Storage::disk('public')->delete('post/'.$post->pdf);
-            }
-
             $post->categories()->detach();
             $post->tags()->detach();
             $post->delete();
