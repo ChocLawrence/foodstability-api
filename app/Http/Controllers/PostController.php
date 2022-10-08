@@ -105,6 +105,14 @@ class PostController extends Controller
             }else{
                 $posts = $post_query->orderBY($sortBy,$sortOrder)->get();
             }
+
+            if($request->visibility == "0"){ 
+                $posts->makeHidden(['keywords','abstract','user','categories','pdf','practical'])->toArray();
+             }
+
+            if($request->visibility == "11"){ 
+                $posts->makeHidden(['image','title','','pdf'])->toArray();
+             }
   
             return $this->successResponse($posts);
         }catch(\Exception $e){
