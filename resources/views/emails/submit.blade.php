@@ -560,7 +560,7 @@
                     </td>
                 </tr><!-- end tr -->
                 <tr>
-                    <td valign="middle" class="hero bg_white"
+                    <td valign="middle" class="hero bg_white" 
                         style="background-image: url({{ asset('assets/images/bg_2.jpg')}}); background-size: cover; height: 400px;">
                         <div class="overlay"></div>
                         <table>
