@@ -369,8 +369,8 @@ class PostController extends Controller
     public function validatePost(){
         return Validator::make(request()->all(), [
             'title' => 'required|min:15|',
-            'image' => 'required|image',
-            'pdf' => 'required|mimes:pdf',
+            'image' => 'required|image|max:1536',
+            'pdf' => 'required|mimes:pdf|max:1536',
             'category_id' => 'required',
             'tag' => 'required',
             'volume' => 'required',
@@ -385,8 +385,8 @@ class PostController extends Controller
     public function validatePostUpdate(){
         return Validator::make(request()->all(), [
             'title' => 'required|min:15',
-            'image' => 'nullable|image',
-            'pdf' => 'nullable|mimes:pdf',
+            'image' => 'nullable|image|max:1536',
+            'pdf' => 'nullable|mimes:pdf|max:1536',
             'category_id' => 'required',
             'tag' => 'nullable',
             'volume' => 'required',
