@@ -36,8 +36,26 @@ class PostController extends Controller
         try{
             $post_query = Post::with(['user','categories']);
 
+            // Handle keyword filter (backward compatibility) or new title filter
             if($request->keyword){
                 $post_query->where('title','LIKE','%'.$request->keyword.'%');
+            } elseif($request->title){
+                $post_query->where('title','LIKE','%'.$request->title.'%');
+            }
+
+            // Handle DOI filter
+            if($request->doi){
+                $post_query->where('doi','LIKE','%'.$request->doi.'%');
+            }
+
+            // Handle Volume filter
+            if($request->volume){
+                $post_query->where('volume', $request->volume);
+            }
+
+            // Handle Issue filter
+            if($request->issue){
+                $post_query->where('issue', $request->issue);
             }
 
             if($request->category){
@@ -69,21 +87,29 @@ class PostController extends Controller
             }
 
             if($request->start_date){
-                $validator = $this->validateStartDate();
-                if($validator->fails()){
-                  return $this->errorResponse($validator->messages(), 422);
-                }
                 $start_date = $request->start_date;
+                // Validate start_date is a valid date
+                try {
+                    Carbon::parse($start_date);
+                } catch (\Exception $e) {
+                    return $this->errorResponse(['start_date' => 'Invalid start date format'], 422);
+                }
             }else{
                 $start_date =  Carbon::now()->subMonth(1)->format('Y-m-d');
             }
 
             if($request->end_date){
-                $validator = $this->validateEndDate();
-                if($validator->fails()){
-                  return $this->errorResponse($validator->messages(), 422);
+                $end_date_input = $request->end_date;
+                // Validate end_date is a valid date
+                try {
+                    $end_date = Carbon::createFromFormat('Y-m-d', $end_date_input)->endOfDay();
+                } catch (\Exception $e) {
+                    return $this->errorResponse(['end_date' => 'Invalid end date format'], 422);
                 }
-                $end_date = Carbon::createFromFormat('Y-m-d',  $request->end_date)->endOfDay();
+                // Validate end_date is after start_date if both are provided
+                if($request->start_date && $end_date < Carbon::parse($start_date)) {
+                    return $this->errorResponse(['end_date' => 'End date must be after start date'], 422);
+                }
             }else{
                 $end = Carbon::now()->format('Y-m-d');
                 $end_date = Carbon::createFromFormat('Y-m-d',  $end)->endOfDay();
@@ -92,18 +118,25 @@ class PostController extends Controller
 
             if($request->page){
 
-                $start_date = Carbon::parse($start_date);
-                $start_date->addHours(00)
+                $start_date_parsed = Carbon::parse($start_date);
+                $start_date_parsed->addHours(00)
                 ->addMinutes(00);
 
-                $endDate = Carbon::parse($end_date);
-                $endDate->addHours(23)
+                $endDate_parsed = Carbon::parse($end_date);
+                $endDate_parsed->addHours(23)
                 ->addMinutes(59);
 
-                $posts = $post_query->orderBY($sortBy,$sortOrder)->whereBetween('created_at', array($start_date, $endDate))->paginate($page_size);
+                $posts = $post_query->orderBy('volume', 'desc')
+                    ->orderBy('issue', 'desc')
+                    ->orderBy($sortBy, $sortOrder)
+                    ->whereBetween('created_at', array($start_date_parsed, $endDate_parsed))
+                    ->paginate($page_size);
            
             }else{
-                $posts = $post_query->orderBY($sortBy,$sortOrder)->get();
+                $posts = $post_query->orderBy('volume', 'desc')
+                    ->orderBy('issue', 'desc')
+                    ->orderBy($sortBy, $sortOrder)
+                    ->get();
             }
 
             if($request->visibility == "0"){ 
