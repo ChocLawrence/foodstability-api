@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
@@ -68,27 +69,20 @@ class CategoryController extends Controller
               return $this->errorResponse($validator->messages(), 422);
             }
 
-            //get form image
-            $image= $request->file('image');
-            $slug= Str::slug($request->name);
+            $image = $request->file('image');
+            $slug = Str::slug($request->name);
 
-            if(isset($image)){
-                $path = $image->getRealPath();
-                $realImage = file_get_contents($path);
-                $imageName = base64_encode($realImage);
-            }else{
-                $imageName = null;
-            }
+            $imagePath = $image ? $image->store('images/categories', 'public') : null;
 
             if (Auth::check())
             {
                 $id = Auth::id();
             }
 
-            $category= new Category();
-            $category->name= $request->name;
-            $category->slug=$slug;
-            $category->image=$imageName;
+            $category = new Category();
+            $category->name = $request->name;
+            $category->slug = $slug;
+            $category->image = $imagePath;
             $category->save();
 
             return $this->successResponse($category,"Saved successfully", 200);
@@ -117,22 +111,18 @@ class CategoryController extends Controller
 
             $request->headers->set('Content-Type', '');
 
-            $validator = $this->validateUpdateCategory();
+            $validator = $this->validateUpdateCategory($id);
             if($validator->fails()){
               return $this->errorResponse($validator->messages(), 422);
             }
 
-            // get form image
             $image = $request->file('image');
             $category = Category::find($id);
-            if (isset($image))
-            {
-                $path = $image->getRealPath();
-                $realImage = file_get_contents($path);
-                $imageName = base64_encode($realImage);
 
-            } else {
-                $imageName = $category->image;
+            $imagePath = $category->image;
+            if ($image) {
+                $this->deleteStoredFileIfPath($category->image, 'images/');
+                $imagePath = $image->store('images/categories', 'public');
             }
 
             if (Auth::check())
@@ -140,14 +130,13 @@ class CategoryController extends Controller
                 $id = Auth::id();
             }
 
-
-            if($request->name){
+            if ($request->name) {
               $slug = Str::slug($request->name);
               $category->name = $request->name;
               $category->slug = $slug;
             }
 
-            $category->image = $imageName;
+            $category->image = $imagePath;
             $category->save();
 
             return $this->successResponse($category);
@@ -176,6 +165,20 @@ class CategoryController extends Controller
         }
     }
 
+    /**
+     * Delete a stored file from public disk if the given value is a path (not base64).
+     */
+    protected function deleteStoredFileIfPath($pathOrValue, $prefix)
+    {
+        if (empty($pathOrValue) || !is_string($pathOrValue)) {
+            return;
+        }
+        $path = (substr($pathOrValue, 0, 8) === 'storage/') ? substr($pathOrValue, 8) : $pathOrValue;
+        if (substr($path, 0, strlen($prefix)) === $prefix && strpos($path, '/') !== false) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
     public function validateCategory(){
         return Validator::make(request()->all(), [
            'name'=>'required|unique:categories',
@@ -183,10 +186,11 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function validateUpdateCategory(){
+    public function validateUpdateCategory($id)
+    {
         return Validator::make(request()->all(), [
-           'name'=>'nullable|unique:categories',
-           'image'=>'nullable|mimes:jpeg,bmp,png,jpg'
+            'name' => ['nullable', Rule::unique('categories')->ignore($id)],
+            'image' => 'nullable|mimes:jpeg,bmp,png,jpg'
         ]);
     }
 }

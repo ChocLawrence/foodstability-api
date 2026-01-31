@@ -16,15 +16,14 @@ class Cors
      */
     public function handle(Request $request, Closure $next)
     {
-        // return $next($request)
-        // ->header('Access-Control-Allow-Origin', '*')
-        // ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        // ->header('"Access-Control-Allow-Headers"', '*');
+        $response = $next($request);
 
-        return $next($request)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        ->header('Access-Control-Allow-Headers', 'Content-type, X-Auth-Token, Authorization, Origin');
+        // Use headers bag so this works with any response type (e.g. BinaryFileResponse from download()).
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        $response->headers->set('Access-Control-Allow-Headers', 'Content-type, X-Auth-Token, Authorization, Origin');
+
+        return $response;
     }
 
 }

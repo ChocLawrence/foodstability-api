@@ -188,7 +188,36 @@ class PostController extends Controller
 
     }
 
-
+    /**
+     * Download post PDF by slug. Returns file with Content-Disposition: attachment so browser downloads instead of opening.
+     */
+    public function downloadPdf($slug)
+    {
+        try {
+            $post = Post::where('slug', $slug)->firstOrFail();
+            $pdf = $post->pdf;
+            if (empty($pdf)) {
+                return $this->errorResponse('No PDF for this post', 404);
+            }
+            $pathWithoutStorage = (substr($pdf, 0, 8) === 'storage/') ? substr($pdf, 8) : $pdf;
+            $isFilePath = (substr($pdf, 0, 8) === 'storage/') || (strpos($pdf, '/') !== false) || preg_match('/\.pdf$/i', $pdf);
+            if (!$isFilePath) {
+                return $this->errorResponse('PDF not available for download', 400);
+            }
+            $fullPath = Storage::disk('public')->path($pathWithoutStorage);
+            if (!is_file($fullPath)) {
+                return $this->errorResponse('PDF file not found', 404);
+            }
+            $filename = $post->slug . '.pdf';
+            return response()->download($fullPath, $filename, [
+                'Content-Type' => 'application/pdf',
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->errorResponse('Post not found', 404);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 500);
+        }
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -209,34 +238,20 @@ class PostController extends Controller
             $image = $request->file('image');
             $pdf = $request->file('pdf');
             $slug = Str::slug($request->title);
-    
-            if(isset($image))
-            {
-                $path = $image->getRealPath();
-                $realImage = file_get_contents($path);
-                $imageName = base64_encode($realImage);
-    
-            } else {
-                $imageName = "default.png";
+
+            $imagePath = $image ? $image->store('images/posts', 'public') : null;
+
+            $pdfPath = null;
+            if ($pdf) {
+                $pdfPath = $pdf->store('pdfs/posts', 'public');
             }
 
-            //check pdf
-            if(isset($pdf))
-            {
-                $pdfPath = $pdf->getRealPath();
-                $realPdf = file_get_contents($pdfPath);
-                $pdfName = base64_encode($realPdf);
-    
-            }else{
-                $pdfName = null;
-            }
-    
             $post = new Post();
             $post->user_id = Auth::id();
             $post->title = $request->title;
             $post->slug = $slug;
-            $post->image = $imageName;
-            $post->pdf = $pdfName;
+            $post->image = $imagePath;
+            $post->pdf = $pdfPath;
             $post->date = Carbon::now()->format('jS F Y');
             $post->category_id = $request->category_id;
             $post->volume = $request->volume;
@@ -251,11 +266,12 @@ class PostController extends Controller
             Log::info($post->date);
     
 
-            $category = Category::find($request->category_id);
+            $categoryId = is_array($request->category_id) ? ($request->category_id[0] ?? reset($request->category_id)) : $request->category_id;
+            $tagId = is_array($request->tag) ? ($request->tag[0] ?? reset($request->tag)) : $request->tag;
+            $category = Category::find($categoryId);
             $post->categories()->attach($category);
 
-
-            $tag = Tag::find($request->tag);
+            $tag = Tag::find($tagId);
             $post->tags()->attach($tag);
 
             return $this->successResponse($post,"Posted successfully", 200);
@@ -289,57 +305,49 @@ class PostController extends Controller
             $image = $request->file('image');
             $pdf = $request->file('pdf');
 
-            if($request->title){
+            if ($request->title) {
                 $slug = Str::slug($request->title);
-            }else{
+            } else {
                 $slug = $post->slug;
             }
-    
-           
-            if(isset($image))
-            {
-                $path = $image->getRealPath();
-                $realImage = file_get_contents($path);
-                $imageName = base64_encode($realImage);
-            }else {
-                $imageName = $post->image;
+
+            $imagePath = $post->image;
+            if ($image) {
+                $this->deleteStoredFileIfPath($post->image, 'images/');
+                $imagePath = $image->store('images/posts', 'public');
             }
 
-            //check pdf
-            if(isset($pdf))
-            {
-                $pdfPath = $pdf->getRealPath();
-                $realPdf = file_get_contents($pdfPath);
-                $pdfName = base64_encode($realPdf);
-            } else {
-                $pdfName = $post->pdf;
+            $pdfPath = $post->pdf;
+            if ($pdf) {
+                $this->deleteStoredFileIfPath($post->pdf, 'pdfs/');
+                $pdfPath = $pdf->store('pdfs/posts', 'public');
             }
-    
-            
+
+            $categoryId = is_array($request->category_id) ? ($request->category_id[0] ?? reset($request->category_id)) : $request->category_id;
+            $tagId = $request->tag ? (is_array($request->tag) ? ($request->tag[0] ?? reset($request->tag)) : $request->tag) : null;
+
             $post->user_id = Auth::id();
             $post->title = $request->title;
             $post->slug = $slug;
-            $post->category_id = $request->category_id;
+            $post->category_id = $categoryId;
             $post->volume = $request->volume;
             $post->issue = $request->issue;
             $post->date = $post->date;
             $post->doi = $request->doi;
             $post->practical = $request->practical;
             $post->author = $request->authors;
-            $post->pdf = $pdfName;
-            $post->image = $imageName;
+            $post->pdf = $pdfPath;
+            $post->image = $imagePath;
             $post->keywords = $request->keywords;
             $post->abstract = $request->abstract;
             $post->save();
-    
+
             Log::info($post->date);
-    
 
-            $category = Category::find($request->category_id);
-            $post->categories()->attach($category);
-
-            $tag = Tag::find($request->tag);
-            $post->tags()->attach($tag);
+            $post->categories()->sync([$categoryId]);
+            if ($tagId) {
+                $post->tags()->sync([$tagId]);
+            }
         
     
             return $this->successResponse($post,"Post Updated successfully", 200);
@@ -377,26 +385,44 @@ class PostController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Post  $post
+     * @param  int|string  $id  Post id
      * @return \Illuminate\Http\Response
      */
-    public function deletePost(Post $id)
+    public function deletePost($id)
     {
+        try {
+            $post = Post::findOrFail($id);
 
-        try{
+            // Remove stored image and PDF files before deleting the record
+            $this->deleteStoredFileIfPath($post->image, 'images/');
+            $this->deleteStoredFileIfPath($post->pdf, 'pdfs/');
 
-            $post = Post::find($id)->first();
             $post->categories()->detach();
             $post->tags()->detach();
             $post->delete();
 
-            return $this->successResponse(null,"Post Deleted successfully", 200);
-            
-
-        }catch(\Exception $e){
+            return $this->successResponse(null, "Post Deleted successfully", 200);
+        } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 404);
         }
+    }
 
+    /**
+     * Delete a stored file from public disk if the given value is a path (not base64).
+     *
+     * @param string|null $pathOrValue
+     * @param string $prefix e.g. 'images/' or 'pdfs/'
+     * @return void
+     */
+    protected function deleteStoredFileIfPath($pathOrValue, $prefix)
+    {
+        if (empty($pathOrValue) || !is_string($pathOrValue)) {
+            return;
+        }
+        $path = (substr($pathOrValue, 0, 8) === 'storage/') ? substr($pathOrValue, 8) : $pathOrValue;
+        if (substr($path, 0, strlen($prefix)) === $prefix && strpos($path, '/') !== false) {
+            Storage::disk('public')->delete($path);
+        }
     }
 
     public function validatePost(){

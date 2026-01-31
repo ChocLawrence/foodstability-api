@@ -231,28 +231,21 @@ class UserController extends Controller
 
 
             $image = $request->file('image');
-            $slug = Str::slug($request->firstname);
             $user = User::findOrFail(Auth::id());
-            if (isset($image))
-            {
-                $path = $image->getRealPath();
-                $realImage = file_get_contents($path);
-                $imageName = base64_encode($realImage);
-            } else {
-                $imageName = $user->image;
+
+            $imagePath = $user->image;
+            if ($image) {
+                $this->deleteStoredFileIfPath($user->image, 'images/');
+                $imagePath = $image->store('images/users', 'public');
             }
-            
+
             $user->firstname = $request->firstname;
             $user->lastname = $request->lastname;
             $user->gender = $request->gender;
             $user->address = $request->address;
             $user->phone = $request->phone;
             $user->email = $request->email;
-
-            if (isset($image)){
-                $user->image = $imageName;
-            }
-        
+            $user->image = $imagePath;
             $user->save();
 
             return $this->successResponse($user,"Updated successfully", 200);
@@ -264,12 +257,27 @@ class UserController extends Controller
     }
 
 
+    /**
+     * Delete a stored file from public disk if the given value is a path (not base64).
+     */
+    protected function deleteStoredFileIfPath($pathOrValue, $prefix)
+    {
+        if (empty($pathOrValue) || !is_string($pathOrValue)) {
+            return;
+        }
+        $path = (substr($pathOrValue, 0, 8) === 'storage/') ? substr($pathOrValue, 8) : $pathOrValue;
+        if (substr($path, 0, strlen($prefix)) === $prefix && strpos($path, '/') !== false) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
     public function validateProfile(){
         return Validator::make(request()->all(), [
             'firstname' => 'required|string|min:2|max:50',
             'lastname' => 'required|string|min:2|max:50',
-            'gender' => 'required|in:male,female', 
-            'email' => 'required|email|max:255|unique:users,email,' .Auth::id(),
+            'gender' => 'required|in:male,female',
+            'email' => 'required|email|max:255|unique:users,email,' . Auth::id(),
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:1024',
         ]);
     }
 
